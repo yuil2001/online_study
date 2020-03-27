@@ -33,7 +33,7 @@ struct node
 
 std::vector<node> node_array;
 
-int search(short c_r, short c_c, short prev_r, short prev_c, int cur_sum, std::string& cur_path);
+int search(std::string& cur_path);
 void clear_history(short c_r, short c_c);
 
 
@@ -128,110 +128,155 @@ int main()
 	std::string path_string;
 	path_string.reserve(r*c);
 	
-	search(0, 0, 0, 0, 0, path_string);
+	search(path_string);
 
-	std::cout << max_sum_path << std::endl;
+	std::cout << max_sum_path.c_str() << std::endl;
 		
 	 
     return 0;
 }
  
-int search(short c_r, short c_c, short prev_r, short prev_c, int cur_sum, std::string& cur_path)
+int search_sub(short& c_r, short& c_c, short& prev_r, short& prev_c)
+{
+	if (c_r >= r || c_c >= c || c_r < 0 || c_c < 0 || node_array[c_r*r + c_c].is_aready_sum == true || node_array[c_r*r + c_c].happy_value == 0)
+	{
+		// 유효하지 않으면 에러코드를 반환
+		c_r = prev_r;
+		c_c = prev_c;
+		prev_c = node_array[c_r*r + c_c].prev_c;
+		prev_r = node_array[c_r*r + c_c].prev_r;
+		return 1;
+	}
+
+	node_array[c_r*r + c_c].prev_c = prev_c;
+	node_array[c_r*r + c_c].prev_r = prev_r;
+	
+	return 0;
+}
+
+int search(std::string& cur_path)
 {
 
 	int ret = 0;
-	// 최종 위치에 도착
-	if (c_r == r-1 && c_c == c-1)
+	short c_r = 0;
+	short c_c = 0;
+	short prev_r = 0; 
+	short prev_c = 0;
+	short cur_sum = 0;
+	/*
+	node_array[0].prev_c = -1;
+	node_array[0].prev_r = -1;
+	*/
+
+
+	while (1)
 	{
-		if (cur_sum + node_array[c_r*r + c_c].happy_value > max_sum)
+		if (c_r == r - 1 && c_c == c - 1)
 		{
-			max_sum = cur_sum + node_array[c_r*r + c_c].happy_value;
-			max_sum_path = cur_path;
-		}
-		node_array[c_r*r + c_c].is_aready_sum = false;
+			if (cur_sum + node_array[c_r*r + c_c].happy_value > max_sum)
+			{
+				max_sum = cur_sum + node_array[c_r*r + c_c].happy_value;
+				max_sum_path = cur_path;
+			}
+			node_array[c_r*r + c_c].is_aready_sum = false;
+
+			if (cur_path.empty() == false)
+				cur_path.pop_back();
+
+			c_c = node_array[c_r*r + c_c].prev_c;
+			c_r = node_array[c_r*r + c_c].prev_r;
+
+			prev_c = node_array[c_r*r + c_c].prev_c;
+			prev_r = node_array[c_r*r + c_c].prev_r;
 		
-		if (cur_path.empty() == false)
-			cur_path.pop_back();
-
-		ret = search(prev_r, prev_c, node_array[prev_r*r + prev_c].prev_r, node_array[prev_r*r + prev_c].prev_c, cur_sum, cur_path);
-		return 0;
-	}
-	else //이외
-	{
-
-		if (c_r >= r || c_c >= c || c_r < 0 || c_c < 0 || node_array[c_r*r + c_c].is_aready_sum == true || node_array[c_r*r + c_c].happy_value == 0 )
-		{
-			// 유효하지 않으면 에러코드를 반환
-			return 1;
 		}
-
-		while(1)
+		else if (node_array[c_r*r + c_c].right == false && c_c < c)
 		{
-			if (node_array[c_r*r + c_c].right == false && c_c < c  )
+			node_array[c_r*r + c_c].right = true;
+			cur_sum += node_array[c_r*r + c_c].happy_value;
+			cur_path += "R";
+			node_array[c_r*r + c_c].is_aready_sum = true;
+			prev_c = c_c;
+			prev_r = c_r;
+			c_c += 1;
+			ret = search_sub(c_r, c_c, prev_r, prev_c);
+			if (ret == 1)
 			{
-				node_array[c_r*r + c_c].right = true;
-				cur_sum += node_array[c_r*r + c_c].happy_value;
-				cur_path += "R";
-				node_array[c_r*r + c_c].is_aready_sum = true;
-				ret = search(c_r, c_c + 1, c_r, c_c, cur_sum, cur_path);
-				if (ret == 1)
-				{
-					if (cur_path.empty() == false)
-						cur_path.pop_back();
-				}
-			}
-			else if (node_array[c_r*r + c_c].left == false && c_c >= 0 )
-			{
-				node_array[c_r*r + c_c].left = true;
-				cur_sum += node_array[c_r*r + c_c].happy_value;
-				cur_path += "L";
-				node_array[c_r*r + c_c].is_aready_sum = true;
-				ret = search(c_r, c_c - 1, c_r, c_c, cur_sum, cur_path);
-				if (ret == 1)
-				{
-					if (cur_path.empty() == false)
-						cur_path.pop_back();
-				}
-			}
-			else if (node_array[c_r*r + c_c].down == false && c_r < r)
-			{
-				node_array[c_r*r + c_c].down = true;
-				cur_sum += node_array[c_r*r + c_c].happy_value;
-				cur_path += "D";
-				node_array[c_r*r + c_c].is_aready_sum = true;
-				ret = search(c_r + 1, c_c, c_r, c_c, cur_sum, cur_path);
-				if (ret == 1)
-				{
-					if (cur_path.empty() == false)
-						cur_path.pop_back();
-				}
-			}
-			else if (node_array[c_r*r + c_c].up == false && c_r >= 0)
-			{
-				node_array[c_r*r + c_c].up = true;
-				cur_sum += node_array[c_r*r + c_c].happy_value;
-				cur_path += "U";
-				node_array[c_r*r + c_c].is_aready_sum = true;
-				ret = search(c_r - 1, c_c, c_r, c_c, cur_sum, cur_path);
-				if (ret == 1)
-				{
-					if (cur_path.empty() == false)
-						cur_path.pop_back();
-				}
-			}
-			else
-			{
-				if (prev_r == 0 && prev_c == 0)
-				{
-					return 0;
-				}
-				clear_history(c_r, c_c);
-				//4방량 탐색이 끝났다.
-				return 1;
+				if (cur_path.empty() == false)
+					cur_path.pop_back();
 			}
 		}
-		
+		else if (node_array[c_r*r + c_c].left == false && c_c >= 0)
+		{
+			node_array[c_r*r + c_c].left = true;
+			cur_sum += node_array[c_r*r + c_c].happy_value;
+			cur_path += "L";
+			node_array[c_r*r + c_c].is_aready_sum = true;
+			prev_c = c_c;
+			prev_r = c_r;
+			c_c -= 1;
+			ret = search_sub(c_r, c_c, prev_r, prev_c);
+			if (ret == 1)
+			{
+				if (cur_path.empty() == false)
+					cur_path.pop_back();
+			}
+		}
+		else if (node_array[c_r*r + c_c].down == false && c_r < r)
+		{
+			node_array[c_r*r + c_c].down = true;
+			cur_sum += node_array[c_r*r + c_c].happy_value;
+			cur_path += "D";
+			node_array[c_r*r + c_c].is_aready_sum = true;
+			prev_c = c_c;
+			prev_r = c_r;
+			c_r += 1;
+			ret = search_sub(c_r, c_c, prev_r, prev_c);
+			if (ret == 1)
+			{
+				if (cur_path.empty() == false)
+					cur_path.pop_back();
+			}
+		}
+		else if (node_array[c_r*r + c_c].up == false && c_r >= 0)
+		{
+			node_array[c_r*r + c_c].up = true;
+			cur_sum += node_array[c_r*r + c_c].happy_value;
+			cur_path += "U";
+			node_array[c_r*r + c_c].is_aready_sum = true;
+			prev_c = c_c;
+			prev_r = c_r;
+			c_r -= 1;
+			ret = search_sub(c_r, c_c, prev_r, prev_c);
+			if (ret == 1)
+			{
+				if (cur_path.empty() == false)
+					cur_path.pop_back();
+			}
+		}
+		else
+		{
+			//4방량 탐색이 끝났다.
+
+			// 0, 0으로 돌아왔으면 종료
+			if (c_c == 0 && c_r == 0)
+			{
+				return 0;
+			}
+
+			cur_sum -= node_array[c_r*r + c_c].happy_value;
+
+			clear_history(c_r, c_c);
+
+			c_c = node_array[c_r*r + c_c].prev_c;
+			c_r = node_array[c_r*r + c_c].prev_r;
+
+			prev_c = node_array[c_r*r + c_c].prev_c;
+			prev_r = node_array[c_r*r + c_c].prev_r;
+			
+		}
 	}
+	
 }
 
 void clear_history(short c_r, short c_c)
